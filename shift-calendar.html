@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>График смен</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600&display=swap');
+
+  :root {
+    --day-color: #2563EB;
+    --day-bg: #EFF6FF;
+    --day-light: #BFDBFE;
+    --night-color: #7C3AED;
+    --night-bg: #F5F3FF;
+    --night-light: #DDD6FE;
+    --off-color: #059669;
+    --off-bg: #ECFDF5;
+    --off-light: #A7F3D0;
+    --today-color: #DC2626;
+    --surface: #FFFFFF;
+    --surface-2: #F8FAFC;
+    --surface-3: #F1F5F9;
+    --border: #E2E8F0;
+    --border-light: #F1F5F9;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-xl: 0 24px 64px rgba(0,0,0,0.16);
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: #F0F4F8;
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Background ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(37,99,235,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 80%, rgba(124,58,237,0.05) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 40% at 60% 30%, rgba(5,150,105,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app-wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+
+  /* ── Header ── */
+  .app-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .header-brand h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(26px, 4vw, 38px);
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .header-brand p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 5px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: 'Manrope', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+  }
+
+  .btn-ghost {
+    background: var(--surface);
+    color: var(--text-secondary);
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-ghost:hover {
+    background: var(--surface-3);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-primary {
+    background: var(--text-primary);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-primary:hover {
+    background: #1e293b;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-danger {
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1.5px solid #FECACA;
+  }
+  .btn-danger:hover { background: #FEE2E2; transform: translateY(-1px); }
+
+  /* ── Start date control ── */
+  .start-date-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 8px 14px;
+    box-shadow: var(--shadow-sm);
+  }
+  .start-date-wrap label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .start-date-wrap input[type="date"] {
+    border: none;
+    background: none;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    outline: none;
+  }
+
+  /* ── Main grid ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ── Calendar card ── */
+  .calendar-card {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+  }
+
+  .calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 28px 18px;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .calendar-nav h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    transition: opacity 0.2s;
+  }
+
+  .nav-arrows {
+    display: flex;
+    gap: 6px;
+  }
+
+  .nav-btn {
+    width: 36px;
+    height: 36px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    box-shadow: var(--shadow-sm);
+  }
+  .nav-btn:hover {
+    background: var(--text-primary);
+    color: #fff;
+    border-color: var(--text-primary);
+    transform: scale(1.05);
+  }
+
+  .weekdays-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 0 20px;
+  }
+
+  .weekday {
+    text-align: center;
+    padding: 12px 0 10px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 6px 14px 20px;
+    gap: 4px;
+  }
+
+  .day-cell {
+    aspect-ratio: 1;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    padding: 4px 2px 5px;
+    min-height: 52px;
+  }
+
+  .day-cell:hover:not(.empty) {
+    transform: scale(1.06);
+    box-shadow: var(--shadow-md);
+    z-index: 2;
+  }
+
+  .day-cell.empty { cursor: default; }
+
+  .day-num {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+
+  .shift-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 2px 5px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  /* Shift types */
+  .day-cell.shift-day {
+    background: var(--day-bg);
+  }
+  .day-cell.shift-day .day-num { color: var(--day-color); }
+  .day-cell.shift-day .shift-badge {
+    background: var(--day-light);
+    color: var(--day-color);
+  }
+
+  .day-cell.shift-night {
+    background: var(--night-bg);
+  }
+  .day-cell.shift-night .day-num { color: var(--night-color); }
+  .day-cell.shift-night .shift-badge {
+    background: var(--night-light);
+    color: var(--night-color);
+  }
+
+  .day-cell.shift-off {
+    background: var(--off-bg);
+  }
+  .day-cell.shift-off .day-num { color: var(--off-color); }
+  .day-cell.shift-off .shift-badge {
+    background: var(--off-light);
+    color: var(--off-color);
+  }
+
+  /* Today */
+  .day-cell.today {
+    ring: none;
+    outline: 2.5px solid var(--today-color);
+    outline-offset: -2.5px;
+  }
+  .day-cell.today .day-num {
+    color: var(--today-color) !important;
+  }
+
+  /* Selected */
+  .day-cell.selected {
+    box-shadow: 0 0 0 2px var(--text-primary), var(--shadow-md);
+    transform: scale(1.08);
+    z-index: 3;
+  }
+
+  /* Note indicator */
+  .note-dot {
+    position: absolute;
+    bottom: 5px;
+    right: 6px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    opacity: 0.4;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    padding: 22px 22px 20px;
+    border: 1px solid var(--border-light);
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  /* Today card */
+  .today-date-display {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .today-weekday {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 14px;
+  }
+
+  .today-shift-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .today-shift-pill.shift-day { background: var(--day-bg); color: var(--day-color); }
+  .today-shift-pill.shift-night { background: var(--night-bg); color: var(--night-color); }
+  .today-shift-pill.shift-off { background: var(--off-bg); color: var(--off-color); }
+
+  .today-pill-icon { font-size: 15px; }
+
+  .today-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .today-info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+  }
+
+  .today-info-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .today-info-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  /* Legend */
+  .legend-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s;
+  }
+  .legend-item:hover { background: var(--surface-2); }
+
+  .legend-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .legend-dot.day { background: var(--day-bg); }
+  .legend-dot.night { background: var(--night-bg); }
+  .legend-dot.off { background: var(--off-bg); }
+
+  .legend-text { flex: 1; }
+  .legend-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .legend-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  /* Month stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .stat-item {
+    text-align: center;
+    padding: 12px 8px;
+    border-radius: var(--radius-md);
+  }
+  .stat-item.day { background: var(--day-bg); }
+  .stat-item.night { background: var(--night-bg); }
+  .stat-item.off { background: var(--off-bg); }
+
+  .stat-num {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .stat-item.day .stat-num { color: var(--day-color); }
+  .stat-item.night .stat-num { color: var(--night-color); }
+  .stat-item.off .stat-num { color: var(--off-color); }
+
+  .stat-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    width: 100%;
+    max-width: 440px;
+    border: 1px solid var(--border-light);
+    transform: scale(0.94) translateY(10px);
+    transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease;
+    opacity: 0;
+  }
+
+  .modal-overlay.open .modal {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+
+  .modal-header {
+    padding: 26px 26px 20px;
+    border-bottom: 1px solid var(--border-light);
+    position: relative;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--surface-3);
+    color: var(--text-secondary);
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .modal-close:hover { background: var(--border); color: var(--text-primary); transform: scale(1.1); }
+
+  .modal-date {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    margin-bottom: 10px;
+  }
+
+  .modal-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .meta-pill.shift-day { background: var(--day-bg); color: var(--day-color); }
+  .meta-pill.shift-night { background: var(--night-bg); color: var(--night-color); }
+  .meta-pill.shift-off { background: var(--off-bg); color: var(--off-color); }
+  .meta-pill.cycle {
+    background: var(--surface-3);
+    color: var(--text-secondary);
+  }
+
+  .modal-body { padding: 22px 26px; }
+
+  .modal-body label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+
+  .note-textarea {
+    width: 100%;
+    min-height: 110px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: var(--surface-2);
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    line-height: 1.6;
+  }
+  .note-textarea:focus {
+    border-color: var(--day-color);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    background: var(--surface);
+  }
+  .note-textarea::placeholder { color: var(--text-muted); }
+
+  .modal-footer {
+    padding: 0 26px 24px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  /* ── Toast ── */
+  .toast-container {
+    position: fixed;
+    bottom: 30px;
+    right: 24px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .toast {
+    background: var(--text-primary);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    font-size: 13.5px;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), toastOut 0.3s ease 2.3s forwards;
+    pointer-events: none;
+    max-width: 320px;
+  }
+
+  .toast.success { background: #059669; }
+  .toast.info { background: #2563EB; }
+  .toast.warn { background: #D97706; }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.94); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes toastOut {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to   { opacity: 0; transform: translateY(-10px) scale(0.96); }
+  }
+
+  /* Calendar month transition */
+  .calendar-grid {
+    animation: fadeSlide 0.22s ease;
+  }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateX(12px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .calendar-nav h2 {
+    animation: fadeIn 0.18s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+    }
+    .sidebar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .sidebar .card:first-child {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .app-wrapper { padding: 20px 14px 50px; }
+    .app-header { flex-direction: column; align-items: flex-start; }
+    .header-controls { width: 100%; }
+    .start-date-wrap { flex: 1; }
+    .sidebar { grid-template-columns: 1fr; }
+    .calendar-nav { padding: 16px 18px 14px; }
+    .calendar-grid { padding: 4px 8px 14px; gap: 3px; }
+    .day-cell { min-height: 44px; border-radius: 10px; }
+    .day-num { font-size: 12.5px; }
+    .shift-badge { font-size: 8px; padding: 2px 4px; }
+    .weekday { font-size: 10.5px; padding: 10px 0 8px; }
+    .weekdays-row { padding: 0 10px; }
+    .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .stat-num { font-size: 20px; }
+    .modal-header { padding: 20px 20px 16px; }
+    .modal-body { padding: 18px 20px; }
+    .modal-footer { padding: 0 20px 20px; }
+    .today-date-display { font-size: 24px; }
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-brand">
+      <h1>График смен</h1>
+      <p>2 дня — день · 2 ночи · 4 выходных · повтор</p>
+    </div>
+    <div class="header-controls">
+      <button class="btn btn-ghost" onclick="goToToday()" title="Перейти к сегодня">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Сегодня
+      </button>
+      <div class="start-date-wrap">
+        <label>Старт цикла:</label>
+        <input type="date" id="startDateInput" onchange="onStartDateChange(this.value)">
+      </div>
+    </div>
+  </header>
+
+  <!-- Main layout -->
+  <div class="main-grid">
+    <!-- Calendar -->
+    <div class="calendar-card">
+      <div class="calendar-nav">
+        <div class="nav-arrows">
+          <button class="nav-btn" onclick="prevMonth()" title="Предыдущий месяц">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="nav-btn" onclick="nextMonth()" title="Следующий месяц">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <h2 id="calMonthTitle"></h2>
+      </div>
+      <div class="weekdays-row">
+        <div class="weekday">Пн</div>
+        <div class="weekday">Вт</div>
+        <div class="weekday">Ср</div>
+        <div class="weekday">Чт</div>
+        <div class="weekday">Пт</div>
+        <div class="weekday">Сб</div>
+        <div class="weekday">Вс</div>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <!-- Today card -->
+      <div class="card" id="todayCard"></div>
+
+      <!-- Legend -->
+      <div class="card">
+        <div class="card-title">Легенда</div>
+        <div class="legend-list">
+          <div class="legend-item">
+            <div class="legend-dot day">☀️</div>
+            <div class="legend-text">
+              <div class="legend-name">Дневная смена</div>
+              <div class="legend-desc">Дни 1–2 цикла</div>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot night">🌙</div>
+            <div class="legend-text">
+              <div class="legend-name">Ночная смена</div>
+              <div class="legend-desc">Дни 3–4 цикла</div>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot off">🏖️</div>
+            <div class="legend-text">
+              <div class="legend-name">Выходной</div>
+              <div class="legend-desc">Дни 5–8 цикла</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Month stats -->
+      <div class="card">
+        <div class="card-title">Текущий месяц</div>
+        <div class="stats-grid" id="monthStats"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="onOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <button class="modal-close" onclick="closeModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="modal-date" id="modalDate"></div>
+      <div class="modal-meta" id="modalMeta"></div>
+    </div>
+    <div class="modal-body">
+      <label>Заметка</label>
+      <textarea class="note-textarea" id="noteTextarea" placeholder="Добавьте заметку к этому дню…" rows="4"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="deleteNoteBtn" onclick="deleteNoteModal()">Удалить</button>
+      <button class="btn btn-primary" onclick="saveNoteModal()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
+let state = {
+  startDate: null,       // Date: first day of the cycle
+  currentYear: null,
+  currentMonth: null,
+  notes: {},             // { 'YYYY-MM-DD': 'note text' }
+  selectedDate: null,    // dateKey of currently selected day
+  modalDateKey: null,    // dateKey open in modal
+};
+
+const CYCLE = ['day', 'day', 'night', 'night', 'off', 'off', 'off', 'off'];
+const SHIFT_LABELS = { day: 'День', night: 'Ночь', off: 'Выходной' };
+const SHIFT_ICONS  = { day: '☀️',   night: '🌙',   off: '🏖️' };
+const SHIFT_CLASS  = { day: 'shift-day', night: 'shift-night', off: 'shift-off' };
+const RU_MONTHS = [
+  'Январь','Февраль','Март','Апрель','Май','Июнь',
+  'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'
+];
+const RU_WEEKDAYS = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+const RU_MONTHS_GEN = [
+  'января','февраля','марта','апреля','мая','июня',
+  'июля','августа','сентября','октября','ноября','декабря'
+];
+
+// ════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════
+function initApp() {
+  const today = new Date();
+  state.currentYear  = today.getFullYear();
+  state.currentMonth = today.getMonth();
+
+  loadFromLocalStorage();
+
+  // Always start cycle from June 4 2025
+  state.startDate = new Date(2026, 5, 4);
+
+  document.getElementById('startDateInput').value = toDateKey(state.startDate);
+  renderCalendar();
+  renderTodayCard();
+  renderMonthStats();
+}
+
+// ════════════════════════════════════════════════════════════
+//  LOCAL STORAGE
+// ════════════════════════════════════════════════════════════
+function loadFromLocalStorage() {
+  try {
+    // startDate is always controlled by initApp, not localStorage
+
+    const notes = localStorage.getItem('shiftCalendarNotes');
+    if (notes) state.notes = JSON.parse(notes);
+
+    const settings = localStorage.getItem('shiftCalendarSettings');
+    if (settings) {
+      const s = JSON.parse(settings);
+      if (s.currentYear)  state.currentYear  = s.currentYear;
+      if (s.currentMonth !== undefined) state.currentMonth = s.currentMonth;
+    }
+  } catch (e) {
+    console.warn('LocalStorage read error', e);
+  }
+}
+
+function saveToLocalStorage() {
+  try {
+    // startDate not saved to localStorage — always defaults to June 4 2025
+    localStorage.setItem('shiftCalendarNotes', JSON.stringify(state.notes));
+    localStorage.setItem('shiftCalendarSettings', JSON.stringify({
+      currentYear:  state.currentYear,
+      currentMonth: state.currentMonth,
+    }));
+  } catch (e) {
+    console.warn('LocalStorage write error', e);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  SHIFT LOGIC
+// ════════════════════════════════════════════════════════════
+
+// Returns 0-based cycle day index (0–7)
+function getCycleDay(date) {
+  const start = normalizeDate(state.startDate);
+  const d     = normalizeDate(date);
+  const diff  = Math.round((d - start) / 86400000);
+  return ((diff % 8) + 8) % 8;
+}
+
+// Returns 'day' | 'night' | 'off'
+function getShiftType(date) {
+  return CYCLE[getCycleDay(date)];
+}
+
+// ════════════════════════════════════════════════════════════
+//  CALENDAR RENDERING
+// ════════════════════════════════════════════════════════════
+function renderCalendar() {
+  const year  = state.currentYear;
+  const month = state.currentMonth;
+  const today = normalizeDate(new Date());
+
+  document.getElementById('calMonthTitle').textContent =
+    `${RU_MONTHS[month]} ${year}`;
+
+  // First day of month (0=Sun..6=Sat) → convert to Monday-based (0=Mon)
+  const firstDow = new Date(year, month, 1).getDay();
+  const startOffset = (firstDow === 0) ? 6 : firstDow - 1;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const grid = document.getElementById('calendarGrid');
+  // Force re-render animation
+  grid.style.animation = 'none';
+  grid.offsetHeight; // reflow
+  grid.style.animation = '';
+
+  grid.innerHTML = '';
+
+  // Empty leading cells
+  for (let i = 0; i < startOffset; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'day-cell empty';
+    grid.appendChild(empty);
+  }
+
+  // Day cells
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date    = new Date(year, month, d);
+    const dateKey = toDateKey(date);
+    const shift   = getShiftType(date);
+    const cycleN  = getCycleDay(date) + 1;
+    const isToday = normalizeDate(date).getTime() === today.getTime();
+    const isSelected = dateKey === state.selectedDate;
+    const hasNote = !!state.notes[dateKey];
+
+    const cell = document.createElement('div');
+    cell.className = `day-cell ${SHIFT_CLASS[shift]}${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}`;
+    cell.title = `${SHIFT_LABELS[shift]} (день цикла ${cycleN})${hasNote ? ' · есть заметка' : ''}`;
+    cell.innerHTML = `
+      <span class="day-num">${d}</span>
+      <span class="shift-badge">${abbreviate(shift)}</span>
+      ${hasNote ? '<div class="note-dot"></div>' : ''}
+    `;
+    cell.addEventListener('click', () => openDayModal(dateKey));
+    grid.appendChild(cell);
+  }
+
+  renderMonthStats();
+}
+
+function abbreviate(shift) {
+  if (shift === 'day')   return 'День';
+  if (shift === 'night') return 'Ночь';
+  return 'Вых';
+}
+
+// ════════════════════════════════════════════════════════════
+//  TODAY CARD
+// ════════════════════════════════════════════════════════════
+function renderTodayCard() {
+  const today = new Date();
+  const shift = getShiftType(today);
+  const cycleDay = getCycleDay(today) + 1;
+  const card = document.getElementById('todayCard');
+
+  const daysToNext = (type) => {
+    if (getShiftType(today) === type) return 0;
+    for (let i = 1; i <= 8; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() + i);
+      if (getShiftType(d) === type) return i;
+    }
+    return 8;
+  };
+
+  const nextDay   = daysToNext('day');
+  const nextNight = daysToNext('night');
+  const nextOff   = daysToNext('off');
+
+  const dayN   = nextDay   === 0 ? 'Сегодня' : `через ${nextDay} дн.`;
+  const nightN = nextNight === 0 ? 'Сегодня' : `через ${nextNight} дн.`;
+  const offN   = nextOff   === 0 ? 'Сегодня' : `через ${nextOff} дн.`;
+
+  card.innerHTML = `
+    <div class="card-title">Сегодня</div>
+    <div class="today-date-display">${today.getDate()} ${RU_MONTHS_GEN[today.getMonth()]}</div>
+    <div class="today-weekday">${capitalize(RU_WEEKDAYS[today.getDay()])}, ${today.getFullYear()}</div>
+    <div class="today-shift-pill ${SHIFT_CLASS[shift]}">
+      <span class="today-pill-icon">${SHIFT_ICONS[shift]}</span>
+      ${SHIFT_LABELS[shift]}
+    </div>
+    <div class="today-info-list">
+      <div class="today-info-row">
+        <span class="today-info-label">День цикла</span>
+        <span class="today-info-value">${cycleDay} из 8</span>
+      </div>
+      <div class="today-info-row">
+        <span class="today-info-label">☀️ Дневная смена</span>
+        <span class="today-info-value">${dayN}</span>
+      </div>
+      <div class="today-info-row">
+        <span class="today-info-label">🌙 Ночная смена</span>
+        <span class="today-info-value">${nightN}</span>
+      </div>
+      <div class="today-info-row">
+        <span class="today-info-label">🏖️ Выходной</span>
+        <span class="today-info-value">${offN}</span>
+      </div>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════════════════════════
+//  MONTH STATS
+// ════════════════════════════════════════════════════════════
+function renderMonthStats() {
+  const year  = state.currentYear;
+  const month = state.currentMonth;
+  const days  = new Date(year, month + 1, 0).getDate();
+  let dayCnt = 0, nightCnt = 0, offCnt = 0;
+
+  for (let d = 1; d <= days; d++) {
+    const t = getShiftType(new Date(year, month, d));
+    if (t === 'day')   dayCnt++;
+    else if (t === 'night') nightCnt++;
+    else offCnt++;
+  }
+
+  document.getElementById('monthStats').innerHTML = `
+    <div class="stat-item day">
+      <div class="stat-num">${dayCnt}</div>
+      <div class="stat-label">Дневных</div>
+    </div>
+    <div class="stat-item night">
+      <div class="stat-num">${nightCnt}</div>
+      <div class="stat-label">Ночных</div>
+    </div>
+    <div class="stat-item off">
+      <div class="stat-num">${offCnt}</div>
+      <div class="stat-label">Выходных</div>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════════════════════════
+//  MODAL
+// ════════════════════════════════════════════════════════════
+function openDayModal(dateKey) {
+  state.selectedDate = dateKey;
+  state.modalDateKey = dateKey;
+  renderCalendar(); // re-render to show selection
+
+  const date  = parseDate(dateKey);
+  const shift = getShiftType(date);
+  const cycleDay = getCycleDay(date) + 1;
+
+  // Format date nicely
+  const dayName = capitalize(RU_WEEKDAYS[date.getDay()]);
+  const formatted = `${dayName}, ${date.getDate()} ${RU_MONTHS_GEN[date.getMonth()]} ${date.getFullYear()}`;
+
+  document.getElementById('modalDate').textContent = formatted;
+  document.getElementById('modalMeta').innerHTML = `
+    <span class="meta-pill ${SHIFT_CLASS[shift]}">${SHIFT_ICONS[shift]} ${SHIFT_LABELS[shift]}</span>
+    <span class="meta-pill cycle">День цикла ${cycleDay}</span>
+  `;
+
+  const existingNote = state.notes[dateKey] || '';
+  document.getElementById('noteTextarea').value = existingNote;
+  document.getElementById('deleteNoteBtn').style.display = existingNote ? 'inline-flex' : 'none';
+
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('noteTextarea').focus(), 260);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  state.modalDateKey = null;
+}
+
+function onOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+// ════════════════════════════════════════════════════════════
+//  NOTES
+// ════════════════════════════════════════════════════════════
+function saveNote(dateKey, text) {
+  if (text.trim()) {
+    state.notes[dateKey] = text.trim();
+  } else {
+    delete state.notes[dateKey];
+  }
+  saveToLocalStorage();
+  renderCalendar();
+}
+
+function deleteNote(dateKey) {
+  delete state.notes[dateKey];
+  saveToLocalStorage();
+  renderCalendar();
+}
+
+function saveNoteModal() {
+  const text = document.getElementById('noteTextarea').value;
+  saveNote(state.modalDateKey, text);
+  closeModal();
+  showToast(text.trim() ? 'Заметка сохранена' : 'Заметка удалена', text.trim() ? 'success' : 'info');
+}
+
+function deleteNoteModal() {
+  deleteNote(state.modalDateKey);
+  closeModal();
+  showToast('Заметка удалена', 'info');
+}
+
+// ════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════════════════
+function prevMonth() {
+  if (state.currentMonth === 0) {
+    state.currentMonth = 11;
+    state.currentYear--;
+  } else {
+    state.currentMonth--;
+  }
+  saveToLocalStorage();
+  renderCalendar();
+}
+
+function nextMonth() {
+  if (state.currentMonth === 11) {
+    state.currentMonth = 0;
+    state.currentYear++;
+  } else {
+    state.currentMonth++;
+  }
+  saveToLocalStorage();
+  renderCalendar();
+}
+
+function goToToday() {
+  const today = new Date();
+  state.currentYear  = today.getFullYear();
+  state.currentMonth = today.getMonth();
+  state.selectedDate = null;
+  saveToLocalStorage();
+  renderCalendar();
+  renderTodayCard();
+}
+
+function onStartDateChange(value) {
+  if (!value) return;
+  state.startDate = parseDate(value);
+  saveToLocalStorage();
+  renderCalendar();
+  renderTodayCard();
+  showToast('Старт цикла обновлён', 'success');
+}
+
+// ════════════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════════════
+function showToast(message, type = '') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast${type ? ' ' + type : ''}`;
+  const icons = { success: '✓', info: 'ℹ', warn: '⚠' };
+  toast.innerHTML = `<span>${icons[type] || '✓'}</span>${message}`;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 2700);
+}
+
+// ════════════════════════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════════════════════════
+function toDateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function parseDate(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function normalizeDate(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'ArrowLeft'  && !document.getElementById('modalOverlay').classList.contains('open')) prevMonth();
+  if (e.key === 'ArrowRight' && !document.getElementById('modalOverlay').classList.contains('open')) nextMonth();
+});
+
+// ════════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════════
+initApp();
+</script>
+</body>
+</html>
